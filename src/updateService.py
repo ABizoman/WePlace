@@ -1,7 +1,9 @@
 import math
 from datetime import datetime
 import random # For simulation
-from lib.LLMclient import validate_update_with_llm
+
+from lib.LLMclient import validate_update_with_llm, validate_creation_with_llm
+
 def calculate_staleness(place_id: int, db_connection) -> float:
     """
     Calculates the staleness of a place's data.
@@ -129,3 +131,80 @@ def perform_update(place_id: int, update_data: dict, db_connection) -> dict:
             "validation_note": validation['reason']
         }
     }
+
+def perform_creation(new_place_data: dict, db_connection) -> dict:
+    """
+    Orchestrates the creation of a new place.
+    """
+    # 1. Validate Creation (LLM)
+    validation = validate_creation_with_llm(new_place_data)
+    
+    if not validation['valid']:
+        return {
+            "status": "rejected",
+            "message": validation['reason']
+        }
+        
+    cursor = db_connection.cursor()
+    
+    # 2. Generate new osmid (negative to avoid collision with OSM)
+    cursor.execute("SELECT MIN(osmid) FROM places")
+    min_osmid = cursor.fetchone()[0]
+    
+    if min_osmid is None:
+        new_osmid = -1
+    elif min_osmid > 0:
+        new_osmid = -1
+    else:
+        new_osmid = min_osmid - 1
+        
+    # 3. Prepare data for insertion
+    # Required fields based on schema, defaulting to None if missing
+    columns = [
+        'osmid', 'name', 'category', 'subcategory', 'address', 
+        'description', 'opening_hours', 'phone', 'website', 
+        'lat', 'lon', 'last_updated'
+    ]
+    
+    place_values = {
+        'osmid': new_osmid,
+        'last_updated': datetime.now().isoformat()
+    }
+    
+    # Merge input data
+    for key in new_place_data:
+        if key in columns:
+            place_values[key] = new_place_data[key]
+            
+    # Ensure mandatory fields (at least name and lat/lon are critical for a map)
+    # The client/request model should enforce this, but double check
+    
+    # Construct INSERT statement
+    place_columns = []
+    query_placeholders = []
+    query_values = []
+    
+    for col in columns:
+        place_columns.append(col)
+        query_placeholders.append("?")
+        query_values.append(place_values.get(col, None))
+        
+    sql = f"INSERT INTO places ({', '.join(place_columns)}) VALUES ({', '.join(query_placeholders)})"
+    
+    try:
+        cursor.execute(sql, query_values)
+        db_connection.commit()
+        
+        return {
+            "status": "success",
+            "message": "Place created successfully",
+            "place_id": new_osmid,
+            "details": {
+                "validation_note": validation['reason']
+            }
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Database error: {str(e)}"
+        }

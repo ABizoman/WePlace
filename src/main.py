@@ -8,8 +8,22 @@ import updateService
 
 
 
+
 class PlaceUpdate(BaseModel):
     name: Optional[str] = None
+    description: Optional[str] = None
+    phone: Optional[str] = None
+    website: Optional[str] = None
+    opening_hours: Optional[str] = None
+
+
+class PlaceCreate(BaseModel):
+    name: str
+    lat: float
+    lon: float
+    category: str
+    subcategory: str
+    address: Optional[str] = None
     description: Optional[str] = None
     phone: Optional[str] = None
     website: Optional[str] = None
@@ -209,6 +223,23 @@ def update_place(place_id: int, update: PlaceUpdate):
     elif result["status"] == "rejected":
         # We return 200 OK even if rejected, but with the specific status and message
         # Or you could use 400 Bad Request, but 200 with "status": "rejected" is often better for logic flow
+        return result
+        
+    return result
+
+@app.post("/places")
+def create_place(place: PlaceCreate):
+    conn = get_db_connection()
+    
+    # Convert Pydantic model to dict
+    place_data = place.dict()
+    
+    result = updateService.perform_creation(place_data, conn)
+    conn.close()
+    
+    if result["status"] == "error":
+        raise HTTPException(status_code=500, detail=result["message"])
+    elif result["status"] == "rejected":
         return result
         
     return result

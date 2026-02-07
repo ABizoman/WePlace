@@ -110,3 +110,83 @@ def validate_update_with_llm(current_data: dict, update_data: dict) -> dict:
         }
 
 
+def validate_creation_with_llm(new_place_data: dict) -> dict:
+    """
+    Validates a new place creation using the Perplexity LLM.
+    
+    Args:
+        new_place_data (dict): The data for the new place.
+        
+    Returns:
+        dict: A dictionary containing 'valid' (bool) and 'reason' (str).
+    """
+    
+    system_prompt = """
+    You are an intelligent data validation assistant for a map/places database.
+    Your task is to verify if a request to create a NEW place is legitimate, accurate, and safe.
+    
+    Please check that the information submitted to create a place generally makes sense.
+    It is STRONGLY favored if existing profiles for this business exist with the same name, opening hours, and location.
+    
+    You should check for:
+    1. Existence: Does this place actually exist at the specified location? 
+       (Search for the name + address/city).
+    2. Accuracy: Do the details (phone, website, hours) match public records?
+    3. Plausibility: Is the data consistent (e.g., category matches business type)?
+    4. Duplicates: Check if this creates a duplicate of a well-known place.
+
+    You must output your decision in STRICT JSON format.
+    The JSON object must have exactly these keys:
+    - "valid": boolean (true if accepted, false if rejected)
+    - "reason": string (a concise explanation of your decision)
+    """
+    
+    user_prompt = f"""
+    Please validate the creation of the following place:
+    
+    --- NEW PLACE DATA ---
+    {json.dumps(new_place_data, indent=2)}
+    
+    Respond with the JSON object.
+    """
+    
+    try:
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+        )
+        
+        content = response.choices[0].message.content.strip()
+        
+        # Robust JSON extraction
+        try:
+            start_idx = content.find('{')
+            end_idx = content.rfind('}')
+            
+            if start_idx != -1 and end_idx != -1:
+                json_str = content[start_idx:end_idx+1]
+                result = json.loads(json_str)
+            else:
+                result = json.loads(content)
+        except json.JSONDecodeError:
+             print(f"Failed to parse JSON. Raw content: {content}")
+             return {
+                 "valid": False,
+                 "reason": f"LLM returned invalid format. Raw response: {content[:100]}..."
+             }
+        
+        if "valid" not in result:
+            result["valid"] = False
+            result["reason"] = "LLM response missing 'valid' key."
+            
+        return result
+        
+    except Exception as e:
+        print(f"Error during LLM validation: {e}")
+        return {
+            "valid": False, 
+            "reason": f"Validation process failed: {str(e)}"
+        }
