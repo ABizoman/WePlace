@@ -3,9 +3,10 @@ import sqlite3
 import os
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
+from utils import calculate_distance_km
 import updateService
 
-# ... (existing imports)
+
 
 class PlaceUpdate(BaseModel):
     name: Optional[str] = None
@@ -141,6 +142,7 @@ def search_places(
             dist_km = float('inf')
             
             # Use utility function here
+            # Use utility function here
             if lat is not None and lon is not None and row['lat'] and row['lon']:
                 dist_km = calculate_distance_km(lat, lon, row['lat'], row['lon'])
                 
@@ -160,9 +162,10 @@ def search_places(
                 # Add distance to result for client convenience
                 # Convert row to dict to modify it
                 item = dict(row) 
-                item['distance_km'] = round(dist_km, 2) if dist_km != float('inf') else None
+                item['distance_km'] = round(dist_km, 2) if (lat is not None and lon is not None and row['lat'] and row['lon']) else None
                 item['score'] = round(final_score, 1)
                 scored_results.append((final_score, item))
+
                 
         # Sort by score descending
         scored_results.sort(key=lambda x: x[0], reverse=True)

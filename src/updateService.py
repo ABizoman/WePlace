@@ -8,7 +8,7 @@ def calculate_staleness(place_id: int, db_connection) -> float:
     Returns a score from 0.0 (fresh) to 1.0 (very stale).
     """
     cursor = db_connection.cursor()
-    cursor.execute("SELECT last_updated FROM places WHERE rowid = ?", (place_id,)) # Assuming rowid for now or osmid if mapped
+    cursor.execute("SELECT last_updated FROM places WHERE osmid = ?", (place_id,))
     row = cursor.fetchone()
     
     if not row or not row['last_updated']:
@@ -84,7 +84,7 @@ def perform_update(place_id: int, update_data: dict, db_connection) -> dict:
     cursor = db_connection.cursor()
     
     # 1. Fetch current data
-    cursor.execute("SELECT * FROM places WHERE rowid = ?", (place_id,))
+    cursor.execute("SELECT * FROM places WHERE osmid = ?", (place_id,))
     row = cursor.fetchone()
     
     if not row:
@@ -127,7 +127,7 @@ def perform_update(place_id: int, update_data: dict, db_connection) -> dict:
     values.append(place_id)
     
     if fields:
-        sql = f"UPDATE places SET {', '.join(fields)} WHERE rowid = ?"
+        sql = f"UPDATE places SET {', '.join(fields)} WHERE osmid = ?"
         cursor.execute(sql, values)
         db_connection.commit()
     

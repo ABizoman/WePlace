@@ -109,7 +109,7 @@ def process_data(gdf):
         website = row.get('website') or row.get('url') or row.get('contact:website')
         
         processed_rows.append({
-            'osmid': row.get('osmid'),
+            'osmid': row.get('id'),
             'name': name,
             'category': cat,
             'subcategory': subcat,
