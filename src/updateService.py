@@ -1,7 +1,7 @@
 import math
 from datetime import datetime
 import random # For simulation
-
+from lib.LLMclient import validate_update_with_llm
 def calculate_staleness(place_id: int, db_connection) -> float:
     """
     Calculates the staleness of a place's data.
@@ -58,24 +58,12 @@ def calculate_compensation(staleness: float, relevance: float) -> float:
 
 def validate_update(update_data: dict, current_data: dict) -> dict:
     """
-    Validates the update using an LLM (Simulated).
+    Validates the update using the LLM.
     Returns a dict with 'valid' (bool) and 'reason' (str).
     """
-    # TODO: Integrate with Grok/Perplexity/GPT-4 API here.
-    # Prompt: "Fact check this update: {update_data} for place: {current_data}"
-    
-    # Simulation: 
-    # If the name is changed to something suspicious, reject.
-    # Otherwise accept.
-    
-    print(f"DEBUG: Simulating LLM Validation for update: {update_data}")
-    
-    if 'name' in update_data:
-        new_name = update_data['name'].lower()
-        if "fake" in new_name or "scam" in new_name:
-            return {"valid": False, "reason": "LLM Flagged: Potential spam/fake name detected."}
-            
-    return {"valid": True, "reason": "LLM Verification: Data seems consistent with public records."}
+    # Use the LLM client
+    # We pass the data directly to the client which handles the prompt and parsing
+    return validate_update_with_llm(current_data, update_data)
 
 def perform_update(place_id: int, update_data: dict, db_connection) -> dict:
     """
