@@ -1,10 +1,21 @@
 from fastapi import FastAPI, HTTPException, Query
 import sqlite3
 import os
-from typing import List, Optional, Dict
-from utils import calculate_distance_km
+from typing import List, Optional, Dict, Any
+from pydantic import BaseModel
+import updateService
 
-app = FastAPI(title="Oxford Places API")
+# ... (existing imports)
+
+class PlaceUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    phone: Optional[str] = None
+    website: Optional[str] = None
+    opening_hours: Optional[str] = None
+
+
+app = FastAPI(title="WePlace API")
 
 # Database Path
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -176,6 +187,28 @@ def search_places(
         rows = cursor.fetchall()
         conn.close()
         return [dict(row) for row in rows]
+
+@app.post("/places/{place_id}/update")
+def update_place(place_id: int, update: PlaceUpdate):
+    conn = get_db_connection()
+    
+    # Convert Pydantic model to dict, excluding None values
+    update_data = {k: v for k, v in update.dict().items() if v is not None}
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="No fields provided for update")
+        
+    result = updateService.perform_update(place_id, update_data, conn)
+    conn.close()
+    
+    if result["status"] == "error":
+        raise HTTPException(status_code=404, detail=result["message"])
+    elif result["status"] == "rejected":
+        # We return 200 OK even if rejected, but with the specific status and message
+        # Or you could use 400 Bad Request, but 200 with "status": "rejected" is often better for logic flow
+        return result
+        
+    return result
 
 @app.get("/categories")
 def get_categories():

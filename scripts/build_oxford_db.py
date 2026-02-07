@@ -119,7 +119,8 @@ def process_data(gdf):
             'phone': phone,
             'website': website,
             'lat': row['lat'],
-            'lon': row['lon']
+            'lon': row['lon'],
+            'last_updated': pd.Timestamp.now().isoformat()
         })
         
     df = pd.DataFrame(processed_rows)
