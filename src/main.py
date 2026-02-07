@@ -2,17 +2,16 @@ from fastapi import FastAPI, HTTPException, Query
 import sqlite3
 import os
 from typing import List, Optional, Dict
+from utils import calculate_distance_km
 
-app = FastAPI(title="WePlace API")
+app = FastAPI(title="Oxford Places API")
 
-# Database Path - Assumes oxford.db is at project root
-# BASE_DIR should point to parent of src
+# Database Path
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, "oxford.db")
 
 def get_db_connection():
     if not os.path.isfile(DB_PATH):
-        # Fallback for when running locally in strange CWD
         if os.path.isfile("oxford.db"):
             conn = sqlite3.connect("oxford.db")
         else:
@@ -20,7 +19,7 @@ def get_db_connection():
     else:
         conn = sqlite3.connect(DB_PATH)
         
-    conn.row_factory = sqlite3.Row  # Access columns by name
+    conn.row_factory = sqlite3.Row
     return conn
 
 @app.get("/")
@@ -29,7 +28,7 @@ def read_root():
         "message": "Welcome to Oxford Places API", 
         "endpoints": [
             "/places?limit=10&offset=0", 
-            "/places/search?q=coffee", 
+            "/places/search?q=coffee&lat=51.75&lon=-1.25", 
             "/categories"
         ]
     }
@@ -44,12 +43,10 @@ def get_places(
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Base query
     query = "SELECT * FROM places"
     params = []
     conditions = []
     
-    # Dynamic filtering
     if category:
         conditions.append("category = ?")
         params.append(category)
@@ -61,7 +58,6 @@ def get_places(
     if conditions:
         query += " WHERE " + " AND ".join(conditions)
         
-    # Pagination
     query += " LIMIT ? OFFSET ?"
     params.extend([limit, offset])
     
@@ -69,18 +65,23 @@ def get_places(
     rows = cursor.fetchall()
     conn.close()
     
-    # Convert 'sqlite3.Row' objects to dicts
     return [dict(row) for row in rows]
 
 @app.get("/places/search")
-def search_places(q: str = Query(..., min_length=3), limit: int = 20):
+def search_places(
+    q: str = Query(..., min_length=3), 
+    limit: int = 20,
+    lat: Optional[float] = None, # User's Latitude
+    lon: Optional[float] = None, # User's Longitude
+    proximity_weight: float = 0.5 # How much distance impacts score (0.0 to 2.0 recommended)
+):
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     
     # Try using RapidFuzz for fuzzy/tolerant search
     try:
-        from rapidfuzz import fuzz, utils
+        from rapidfuzz import fuzz
         
         # 1. Fetch EVERYTHING
         cursor.execute("SELECT * FROM places")
@@ -106,13 +107,11 @@ def search_places(q: str = Query(..., min_length=3), limit: int = 20):
                 target_subcats.update(synonyms[word])
         
         for row in rows:
-            # 1. Name & Description: Use Partial Ratio (substring match is fine)
-            # "Starbucks" matches "Starbucks Coffee" -> Good.
+            # 1. Name & Description: Use Partial Ratio
             s_name = fuzz.partial_ratio(q_lower, str(row.get('name', '')).lower())
             s_desc = fuzz.partial_ratio(q_lower, str(row.get('description', '')).lower())
             
             # 2. Category & Subcategory: Use STRICT Ratio
-            # Prevents "coffee shop" from matching "shop" (Lidl) with 100% score
             cat_val = str(row.get('category', '')).lower()
             sub_val = str(row.get('subcategory', '')).lower()
             
@@ -120,22 +119,43 @@ def search_places(q: str = Query(..., min_length=3), limit: int = 20):
             s_sub = fuzz.ratio(q_lower, sub_val)
             
             # 3. Synonym Boost
-            # If the place's subcategory matches a synonym of the query, give it max score
             if sub_val in target_subcats:
                 s_sub = 100
             
-            # Weighted Final Score
-            # We prioritize Name and Subcategory matches
-            final_score = max(s_name, s_sub, s_cat, s_desc)
+            # Base Relevance Score
+            base_score = max(s_name, s_sub, s_cat, s_desc)
             
-            # Threshold
-            if final_score > 60:
-                scored_results.append((final_score, row))
+            # 4. Proximity Boost (if lat/lon provided)
+            bonus_score = 0
+            dist_km = float('inf')
+            
+            # Use utility function here
+            if lat is not None and lon is not None and row['lat'] and row['lon']:
+                dist_km = calculate_distance_km(lat, lon, row['lat'], row['lon'])
+                
+                # Proximity Score Function: decay
+                # 0km -> 100
+                # 1km -> ~66
+                # 5km -> ~16
+                proximity_score = 100 / (1 + 0.5 * dist_km)
+                
+                # Add to total with weight
+                bonus_score = proximity_score * proximity_weight
+
+            final_score = base_score + bonus_score
+            
+            # Threshold (check base_score to ensure relevance first, then rank by proximity)
+            if base_score > 55:
+                # Add distance to result for client convenience
+                # Convert row to dict to modify it
+                item = dict(row) 
+                item['distance_km'] = round(dist_km, 2) if dist_km != float('inf') else None
+                item['score'] = round(final_score, 1)
+                scored_results.append((final_score, item))
                 
         # Sort by score descending
         scored_results.sort(key=lambda x: x[0], reverse=True)
         
-        # Return top matches
         return [item[1] for item in scored_results[:limit]]
 
     except ImportError:
@@ -162,7 +182,6 @@ def get_categories():
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Get distinct (Category, Subcategory) pairs
     cursor.execute("""
         SELECT DISTINCT category, subcategory 
         FROM places 
@@ -172,7 +191,6 @@ def get_categories():
     rows = cursor.fetchall()
     conn.close()
     
-    # Group them: { "amenity": ["cafe", "pub"], "shop": ["bakery"] }
     result: Dict[str, List[str]] = {}
     for row in rows:
         cat = row['category']
