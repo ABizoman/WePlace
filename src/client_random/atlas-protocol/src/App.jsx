@@ -160,10 +160,8 @@ const DashboardHeader = ({ balance }) => (
     <div className="hud-left">
       <div className="brand-title">
         <Database size={24} color="#10b981" />
-        ATLAS_PROTOCOL
-        <span className="brand-tag">BETA_V4</span>
+        BOUNTY GO
       </div>
-      <div className="brand-subtitle">GLOBAL_ENTITY_REFERENCE_SYSTEM // OXFORD_NODE</div>
     </div>
 
     <div className="hud-right">
@@ -181,22 +179,41 @@ const DashboardHeader = ({ balance }) => (
 );
 
 const BountyPanel = ({ selectedLocation, onClose, onVerify }) => {
+  const [formData, setFormData] = useState({ image: null, description: '' });
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setFormData(prev => ({ ...prev, image: e.target.files[0] }));
+    }
+  };
+
+  const handleDescriptionChange = (e) => {
+    setFormData(prev => ({ ...prev, description: e.target.value }));
+  };
+
   const [isVerifying, setIsVerifying] = useState(false);
   const [step, setStep] = useState(0); // 0: Idle, 1: Scanning, 2: Cross-Ref, 3: Success
 
-  const handleVerify = () => {
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!formData.image) return; // Prevent submit without image
+
     setIsVerifying(true);
     setStep(1);
 
-    // Simulate AI Process
-    setTimeout(() => setStep(2), 1500); // Cross-referencing
+    // Simulate AI Process - 4 Seconds Total
+    // 0s: Start Scanning
+    setTimeout(() => setStep(2), 1500); // 1.5s: Cross-referencing
     setTimeout(() => {
-      setStep(3);
-      setTimeout(() => {
-        onVerify(selectedLocation.id);
-        setIsVerifying(false);
-      }, 1000);
-    }, 3500);
+      setStep(3); // 3.0s: Verdict/Success
+    }, 3000);
+
+    setTimeout(() => {
+      onVerify(selectedLocation.id);
+      setIsVerifying(false);
+      setFormData({ image: null, description: '' }); // Reset form
+      setStep(0);
+    }, 4000); // 4.0s: Finish
   };
 
   if (!selectedLocation) return null;
@@ -235,19 +252,39 @@ const BountyPanel = ({ selectedLocation, onClose, onVerify }) => {
 
         {/* Action Area */}
         {selectedLocation.status === 'stale' && !isVerifying && (
-          <>
-            <div className="upload-zone">
+          <form className="bounty-form" onSubmit={handleSubmit}>
+
+            {/* Image Upload */}
+            <label className={`file-drop-area ${formData.image ? 'active' : ''}`}>
+              <input type="file" accept="image/*" onChange={handleFileChange} />
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                 <Upload size={24} />
-                <span style={{ fontSize: '12px' }}>DRAG_EVIDENCE_IMG OR CLICK_TO_UPLOAD</span>
+                <span style={{ fontSize: '12px' }}>
+                  {formData.image ? 'IMAGE SELECTED' : 'DRAG_EVIDENCE_IMG OR CLICK'}
+                </span>
+                {formData.image && (
+                  <span className="selected-file-name">{formData.image.name}</span>
+                )}
               </div>
+            </label>
+
+            {/* Description Input */}
+            <div className="form-group">
+              <label className="form-label">OBSERVATION_LOG</label>
+              <textarea
+                className="form-input"
+                rows="2"
+                placeholder="Describe current status..."
+                value={formData.description}
+                onChange={handleDescriptionChange}
+              />
             </div>
 
-            <button onClick={handleVerify} className="btn-verify">
+            <button type="submit" className="btn-verify" disabled={!formData.image}>
               <Scan size={18} />
               INITIATE_VERIFICATION_PROTOCOL
             </button>
-          </>
+          </form>
         )}
 
         {/* AI Processing Visualization */}
