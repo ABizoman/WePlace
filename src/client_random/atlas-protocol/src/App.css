@@ -1,0 +1,372 @@
+/* --- ANIMATIONS --- */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(50px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse-red {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes scanline {
+  0% {
+    top: 0%;
+  }
+
+  100% {
+    top: 100%;
+  }
+}
+
+/* --- HUD LAYOUT --- */
+.app-container {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+  background: black;
+  font-family: 'Courier Prime', 'Consolas', monospace;
+  /* Tech feel */
+}
+
+/* --- HEADER --- */
+.hud-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 100;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent);
+}
+
+.hud-left,
+.hud-right {
+  pointer-events: auto;
+}
+
+.brand-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 10px var(--color-primary-glow);
+}
+
+.brand-tag {
+  font-size: 0.6rem;
+  background: rgba(16, 185, 129, 0.2);
+  color: var(--color-primary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--color-primary);
+}
+
+.brand-subtitle {
+  font-size: 0.7rem;
+  color: #888;
+  margin-left: 2rem;
+  opacity: 0.8;
+}
+
+/* --- WALLET WIDGET --- */
+.wallet-widget {
+  background: rgba(10, 15, 20, 0.7);
+  border: 1px solid var(--color-border);
+  backdrop-filter: blur(12px);
+  padding: 0.8rem 1.2rem;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.wallet-icon {
+  background: rgba(16, 185, 129, 0.15);
+  padding: 8px;
+  border-radius: 8px;
+  color: var(--color-primary);
+}
+
+.wallet-info label {
+  display: block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #888;
+}
+
+.wallet-balance {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: white;
+  font-family: 'Inter', sans-serif;
+}
+
+/* --- BOUNTY PANEL --- */
+.bounty-panel {
+  position: absolute;
+  top: 100px;
+  right: 20px;
+  width: 380px;
+  background: var(--color-panel);
+  border: 1px solid var(--color-border);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  overflow: hidden;
+  z-index: 200;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+  animation: slideInRight 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  color: white;
+}
+
+.panel-header {
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.status-dot.fresh {
+  background: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.status-dot.stale {
+  background: var(--color-danger);
+  color: var(--color-danger);
+  animation: pulse-red 2s infinite;
+}
+
+.btn-close {
+  background: transparent;
+  border: none;
+  color: #666;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.btn-close:hover {
+  color: white;
+}
+
+.panel-content {
+  padding: 1.5rem;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.info-block label {
+  display: block;
+  font-size: 0.65rem;
+  color: #666;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.info-block .value {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.value.fresh {
+  color: var(--color-primary);
+}
+
+.value.stale {
+  color: var(--color-danger);
+  text-shadow: 0 0 10px var(--color-danger-glow);
+}
+
+.value.bounty {
+  color: #fbbf24;
+}
+
+.upload-zone {
+  border: 1px dashed var(--color-border);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-bottom: 1rem;
+  color: #888;
+}
+
+.upload-zone:hover {
+  border-color: var(--color-primary);
+  background: rgba(16, 185, 129, 0.05);
+  color: var(--color-primary);
+}
+
+.btn-verify {
+  width: 100%;
+  background: var(--color-primary);
+  color: black;
+  border: none;
+  padding: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-verify:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px var(--color-primary-glow);
+}
+
+.ai-feed {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--color-border);
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-family: 'Consolas', monospace;
+}
+
+.ai-step {
+  margin-bottom: 0.5rem;
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+
+.ai-step.active {
+  opacity: 1;
+  color: white;
+}
+
+.ai-step.done {
+  opacity: 1;
+  color: var(--color-primary);
+}
+
+.spinner {
+  animation: spin-slow 2s linear infinite;
+}
+
+/* --- LIVE FEED --- */
+.live-feed {
+  position: absolute;
+  bottom: 2rem;
+  left: 2rem;
+  width: 300px;
+  background: rgba(10, 15, 20, 0.8);
+  border: 1px solid var(--color-border);
+  backdrop-filter: blur(10px);
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  color: #aaa;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.feed-item {
+  margin-bottom: 0.5rem;
+  border-left: 2px solid var(--color-border);
+  padding-left: 8px;
+}
+
+.feed-item:first-child {
+  border-color: var(--color-primary);
+  color: white;
+}
+
+/* --- BEACON LABEL (3D HTML) --- */
+.beacon-label {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: inherit;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s;
+  pointer-events: none;
+}
+
+.beacon-label.stale {
+  background: rgba(239, 68, 68, 0.8);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: white;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+}
+
+.beacon-label.fresh {
+  background: rgba(16, 185, 129, 0.8);
+  border-color: rgba(16, 185, 129, 0.5);
+  color: white;
+}
