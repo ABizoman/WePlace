@@ -133,7 +133,6 @@ def validate_creation_with_llm(new_place_data: dict) -> dict:
        (Search for the name + address/city).
     2. Accuracy: Do the details (phone, website, hours) match public records?
     3. Plausibility: Is the data consistent (e.g., category matches business type)?
-    4. Duplicates: Check if this creates a duplicate of a well-known place.
 
     You must output your decision in STRICT JSON format.
     The JSON object must have exactly these keys:
