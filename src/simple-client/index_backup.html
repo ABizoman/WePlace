@@ -500,10 +500,9 @@
             }
 
             places.forEach(place => {
-                const id = place.osmid || place.id;
                 const card = document.createElement('div');
                 card.className = 'place-card';
-                card.id = `place-${id}`;
+                card.id = `place-${place.id}`;
 
                 // Standard View
                 const viewHtml = `
@@ -527,7 +526,7 @@
                 </div>
 
                 <div class="actions">
-                    <button class="btn btn-secondary" onclick="toggleEdit('${id}')">Edit Details</button>
+                    <button class="btn btn-secondary" onclick="toggleEdit(${place.id})">Edit Details</button>
                     ${place.phone ? `<a href="tel:${place.phone}" class="btn btn-secondary">Call</a>` : ''}
                     ${place.website ? `<a href="${place.website.startsWith('http') ? place.website : 'https://' + place.website}" target="_blank" class="btn btn-secondary">Website</a>` : ''}
                 </div>
@@ -543,43 +542,34 @@
 
         function toggleEdit(id) {
             const card = document.getElementById(`place-${id}`);
-            // Robustly get JSON data. If we are in edit mode, the data is still on the card.
             const place = JSON.parse(card.dataset.json);
 
             // Check if already editing
             if (card.querySelector('.edit-form')) {
-                // Cancel edit -> re-render VIEW mode
+                // Cancel edit -> re-render view
+                // In a real app we'd just re-render result content, here we re-render the whole card content
+                // We can just call renderResults with current list if we had state, 
+                // but for simplicity let's rebuild the HTML string manually or fetch.
+                // Simplest: rebuild the view HTML.
                 card.innerHTML = `
                 <div class="place-header">
                     <h3 class="place-name">${place.name}</h3>
                     <span class="place-category">${place.category}</span>
                 </div>
-                
-                <div class="place-details">
-                    ${place.subcategory ? `<div class="detail-row"><span class="label">Type</span> <span class="value">${place.subcategory}</span></div>` : ''}
-                    ${place.address ? `<div class="detail-row"><span class="label">Address</span> <span class="value">${place.address}</span></div>` : ''}
-                    ${place.phone ? `<div class="detail-row"><span class="label">Phone</span> <span class="value"><a href="tel:${place.phone}">${place.phone}</a></span></div>` : ''}
-                    ${place.website ? `<div class="detail-row"><span class="label">Website</span> <span class="value"><a href="${place.website.startsWith('http') ? place.website : 'https://' + place.website}" target="_blank">Visit Site</a></span></div>` : ''}
-                    ${place.opening_hours ? `<div class="detail-row"><span class="label">Hours</span> <span class="value">${place.opening_hours}</span></div>` : ''}
-                    ${place.distance_km ? `<div class="detail-row"><span class="label">Distance</span> <span class="value">${place.distance_km} km</span></div>` : ''}
+                <div class="place-meta">
+                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    ${place.distance_km ? `${place.distance_km} km • ` : ''} ${place.subcategory || ''}
                 </div>
-
-                <div class="place-desc-full">
-                    <span class="label">Description</span>
-                    <p>${place.description || 'No description available.'}</p>
-                </div>
-
+                <p class="place-desc">${place.description || 'No description available.'}</p>
                 <div class="actions">
-                    <button class="btn btn-secondary" onclick="toggleEdit('${id}')">Edit Details</button>
+                    <button class="btn btn-secondary" onclick="toggleEdit(${place.id})">Edit</button>
                     ${place.phone ? `<a href="tel:${place.phone}" class="btn btn-secondary">Call</a>` : ''}
-                    ${place.website ? `<a href="${place.website.startsWith('http') ? place.website : 'https://' + place.website}" target="_blank" class="btn btn-secondary">Website</a>` : ''}
                 </div>
             `;
                 return;
             }
 
             // Switch to Edit Mode
-            // Note: We use ${id} which we passed in, assuming it's valid.
             card.innerHTML = `
             <div class="edit-form">
                 <div>
@@ -613,8 +603,8 @@
                 </div>
 
                  <div class="actions" style="margin-top: 10px;">
-                    <button class="btn btn-primary" onclick="saveEdit('${id}')">Save Changes</button>
-                    <button class="btn btn-secondary" onclick="toggleEdit('${id}')">Cancel</button>
+                    <button class="btn btn-primary" onclick="saveEdit(${id})">Save Changes</button>
+                    <button class="btn btn-secondary" onclick="toggleEdit(${id})">Cancel</button>
                 </div>
             </div>
         `;
