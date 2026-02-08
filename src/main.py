@@ -30,7 +30,19 @@ class PlaceCreate(BaseModel):
     opening_hours: Optional[str] = None
 
 
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="WePlace API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 # Database Path
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

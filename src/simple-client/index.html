@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WePlace Client</title>
+    <style>
+        :root {
+            --bg-color: #f5f5f7;
+            --card-bg: #ffffff;
+            --text-primary: #1d1d1f;
+            --text-secondary: #86868b;
+            --accent-color: #0071e3;
+            --accent-hover: #0077ed;
+            --danger-color: #ff3b30;
+            --success-color: #34c759;
+            --radius-lg: 18px;
+            --radius-md: 12px;
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.08);
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            padding-bottom: 80px;
+            /* Space for FAB */
+        }
+
+        h1 {
+            text-align: center;
+            font-weight: 700;
+            margin-bottom: 24px;
+            font-size: 28px;
+            letter-spacing: -0.5px;
+        }
+
+        /* Search Bar */
+        .search-container {
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+            margin-bottom: 24px;
+            display: flex;
+            gap: 10px;
+        }
+
+        input[type="text"] {
+            flex-grow: 1;
+            padding: 14px 18px;
+            font-size: 16px;
+            border: none;
+            border-radius: var(--radius-lg);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: var(--shadow-md);
+            outline: none;
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+
+        input[type="text"]:focus {
+            background: #fff;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            transform: scale(1.01);
+        }
+
+        .icon-btn {
+            background: var(--card-bg);
+            border: none;
+            border-radius: var(--radius-lg);
+            width: 50px;
+            height: 50px;
+            /* Match input height roughly */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow-md);
+            color: var(--accent-color);
+            transition: transform 0.2s;
+        }
+
+        .icon-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .icon-btn.loading {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Results List */
+        .results-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .place-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: default;
+        }
+
+        .place-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .place-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .place-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .place-category {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            background: #f0f0f2;
+            padding: 4px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .place-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .place-meta {
+            font-size: 13px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-secondary {
+            background: #f0f0f2;
+            color: var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            background: #e5e5e7;
+        }
+
+        /* Edit Form (Inline) */
+        .edit-form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .form-input {
+            padding: 10px;
+            border: 1px solid #e5e5e7;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .form-input:focus {
+            border-color: var(--accent-color);
+        }
+
+        /* FAB */
+        .fab {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 56px;
+            height: 56px;
+            background: var(--accent-color);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            box-shadow: 0 4px 16px rgba(0, 113, 227, 0.4);
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: none;
+            z-index: 200;
+        }
+
+        .fab:hover {
+            transform: scale(1.1) rotate(90deg);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            width: 90%;
+            max-width: 400px;
+            padding: 24px;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1);
+        }
+
+        .modal h2 {
+            margin-top: 0;
+            font-size: 22px;
+        }
+
+        .modal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-actions .btn {
+            flex: 1;
+            padding: 12px;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 500;
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+            z-index: 2000;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>WePlace (Oxford)</h1>
+
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search places (e.g. coffee, library)..."
+                autocomplete="off">
+            <button class="icon-btn" id="locationBtn" title="Use my location">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+                </svg>
+            </button>
+        </div>
+
+        <div id="resultsList" class="results-list">
+            <!-- Results injected here -->
+            <div style="text-align: center; color: #86868b; margin-top: 40px;">
+                Start searching to explore Oxford
+            </div>
+        </div>
+    </div>
+
+    <button class="fab" id="fabBtn" title="Add Place">+</button>
+
+    <!-- Create Modal -->
+    <div class="modal-overlay" id="createModal">
+        <div class="modal">
+            <h2>Add New Place</h2>
+            <div class="modal-form">
+                <input type="text" id="newName" class="form-input" placeholder="Name">
+                <select id="newCategory" class="form-input">
+                    <option value="food">Food</option>
+                    <option value="drink">Drink</option>
+                    <option value="retail">Retail</option>
+                    <option value="service">Service</option>
+                    <option value="landmark">Landmark</option>
+                    <option value="education">Education</option>
+                    <option value="activity">Activity</option>
+                    <option value="other">Other</option>
+                </select>
+                <input type="text" id="newSubcategory" class="form-input" placeholder="Subcategory (e.g. Cafe)">
+                <textarea id="newDesc" class="form-input" placeholder="Description"></textarea>
+                <input type="text" id="newAddress" class="form-input" placeholder="Address">
+
+                <!-- Hidden lat/lon if not provided, maybe default to Oxford center if user doesn't pick? -->
+                <!-- For simple client without map, use user location or default -->
+                <div style="font-size: 12px; color: #888;">Location will default to your current location or Oxford
+                    center if unavailable.</div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="submitCreate()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Action Successful</div>
+
+    <script>
+        const API_BASE = 'http://127.0.0.1:8000';
+        let currentLocation = null;
+
+        // --- DOM Elements ---
+        const searchInput = document.getElementById('searchInput');
+        const locationBtn = document.getElementById('locationBtn');
+        const resultsList = document.getElementById('resultsList');
+        const fabBtn = document.getElementById('fabBtn');
+        const createModal = document.getElementById('createModal');
+        const toast = document.getElementById('toast');
+
+        // --- State ---
+        let searchTimeout;
+
+        // --- API Calls ---
+        async function searchPlaces(query, lat, lon) {
+            let url = `${API_BASE}/places/search?q=${encodeURIComponent(query)}&limit=20`;
+            if (lat && lon) {
+                url += `&lat=${lat}&lon=${lon}`;
+            }
+            const res = await fetch(url);
+            return await res.json();
+        }
+
+        async function updatePlace(id, data) {
+            try {
+                const res = await fetch(`${API_BASE}/places/${id}/update`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!res.ok) throw new Error('Update failed');
+                return await res.json();
+            } catch (e) {
+                console.error(e);
+                showToast("Update Failed", true);
+            }
+        }
+
+        async function createPlace(data) {
+            try {
+                const res = await fetch(`${API_BASE}/places`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                if (!res.ok) throw new Error('Create failed');
+                return await res.json();
+            } catch (e) {
+                console.error(e);
+                showToast("Creation Failed", true);
+            }
+        }
+
+        // --- Rendering ---
+        function renderResults(places) {
+            resultsList.innerHTML = '';
+            if (!places || places.length === 0) {
+                resultsList.innerHTML = '<div style="text-align: center; color: #86868b; margin-top: 20px;">No places found.</div>';
+                return;
+            }
+
+            places.forEach(place => {
+                const card = document.createElement('div');
+                card.className = 'place-card';
+                card.id = `place-${place.id}`;
+
+                // Standard View
+                const viewHtml = `
+                <div class="place-header">
+                    <h3 class="place-name">${place.name}</h3>
+                    <span class="place-category">${place.category}</span>
+                </div>
+                <div class="place-meta">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    ${place.distance_km ? `${place.distance_km} km • ` : ''} ${place.subcategory || ''}
+                </div>
+                <p class="place-desc">${place.description || 'No description available.'}</p>
+                <div class="actions">
+                    <button class="btn btn-secondary" onclick="toggleEdit(${place.id})">Edit</button>
+                    ${place.phone ? `<a href="tel:${place.phone}" class="btn btn-secondary">Call</a>` : ''}
+                </div>
+            `;
+
+                // Edit View (Hidden by default, toggled via JS)
+                // We store the data in data-attributes for easy access
+                card.dataset.json = JSON.stringify(place);
+                card.innerHTML = viewHtml;
+                resultsList.appendChild(card);
+            });
+        }
+
+        function toggleEdit(id) {
+            const card = document.getElementById(`place-${id}`);
+            const place = JSON.parse(card.dataset.json);
+
+            // Check if already editing
+            if (card.querySelector('.edit-form')) {
+                // Cancel edit -> re-render view
+                // In a real app we'd just re-render result content, here we re-render the whole card content
+                // We can just call renderResults with current list if we had state, 
+                // but for simplicity let's rebuild the HTML string manually or fetch.
+                // Simplest: rebuild the view HTML.
+                card.innerHTML = `
+                <div class="place-header">
+                    <h3 class="place-name">${place.name}</h3>
+                    <span class="place-category">${place.category}</span>
+                </div>
+                <div class="place-meta">
+                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    ${place.distance_km ? `${place.distance_km} km • ` : ''} ${place.subcategory || ''}
+                </div>
+                <p class="place-desc">${place.description || 'No description available.'}</p>
+                <div class="actions">
+                    <button class="btn btn-secondary" onclick="toggleEdit(${place.id})">Edit</button>
+                    ${place.phone ? `<a href="tel:${place.phone}" class="btn btn-secondary">Call</a>` : ''}
+                </div>
+            `;
+                return;
+            }
+
+            // Switch to Edit Mode
+            card.innerHTML = `
+            <div class="edit-form">
+                <input type="text" class="form-input" id="edit-name-${id}" value="${place.name}">
+                <textarea class="form-input" id="edit-desc-${id}">${place.description || ''}</textarea>
+                <input type="text" class="form-input" id="edit-phone-${id}" value="${place.phone || ''}" placeholder="Phone">
+                 <div class="actions">
+                    <button class="btn btn-primary" onclick="saveEdit(${id})">Save</button>
+                    <button class="btn btn-secondary" onclick="toggleEdit(${id})">Cancel</button>
+                </div>
+            </div>
+        `;
+        }
+
+        async function saveEdit(id) {
+            const name = document.getElementById(`edit-name-${id}`).value;
+            const desc = document.getElementById(`edit-desc-${id}`).value;
+            const phone = document.getElementById(`edit-phone-${id}`).value;
+
+            const res = await updatePlace(id, { name, description: desc, phone });
+            if (res) {
+                showToast("Update Successful");
+                // Refresh results
+                handleSearch();
+            }
+        }
+
+        // --- Interaction ---
+        async function handleSearch() {
+            const startState = document.getElementById('locationBtn').innerHTML;
+            // document.getElementById('locationBtn').classList.add('loading');
+
+            const q = searchInput.value;
+            if (!q) {
+                resultsList.innerHTML = '<div style="text-align: center; color: #86868b; margin-top: 40px;">Type to search...</div>';
+                return;
+            }
+
+            const lat = currentLocation ? currentLocation.latitude : null;
+            const lon = currentLocation ? currentLocation.longitude : null;
+
+            const results = await searchPlaces(q, lat, lon);
+            renderResults(results);
+
+            // document.getElementById('locationBtn').classList.remove('loading');
+        }
+
+        // Debounce search
+        searchInput.addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(handleSearch, 300);
+        });
+
+        locationBtn.addEventListener('click', () => {
+            locationBtn.classList.add('loading');
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        currentLocation = pos.coords;
+                        locationBtn.classList.remove('loading');
+                        locationBtn.style.color = '#34c759'; // Success green
+                        showToast("Location Acquired");
+                        if (searchInput.value) handleSearch();
+                    },
+                    (err) => {
+                        console.error(err);
+                        locationBtn.classList.remove('loading');
+                        showToast("Location Denied", true);
+                    }
+                );
+            } else {
+                showToast("Geolocation not supported", true);
+            }
+        });
+
+        // --- Create Modal Logic ---
+        fabBtn.addEventListener('click', () => {
+            createModal.classList.add('active');
+        });
+
+        function closeModal() {
+            createModal.classList.remove('active');
+        }
+
+        // Close modal on outside click
+        createModal.addEventListener('click', (e) => {
+            if (e.target === createModal) closeModal();
+        });
+
+        async function submitCreate() {
+            const name = document.getElementById('newName').value;
+            if (!name) return alert("Name is required");
+
+            const data = {
+                name,
+                category: document.getElementById('newCategory').value,
+                subcategory: document.getElementById('newSubcategory').value || 'General',
+                description: document.getElementById('newDesc').value,
+                address: document.getElementById('newAddress').value,
+                lat: currentLocation ? currentLocation.latitude : 51.7520, // Default to Oxford
+                lon: currentLocation ? currentLocation.longitude : -1.2577
+            };
+
+            const res = await createPlace(data);
+            if (res) {
+                showToast("Place Created!");
+                closeModal();
+                // Clear form
+                document.getElementById('newName').value = '';
+                document.getElementById('newDesc').value = '';
+                // Refresh if searchable
+                if (searchInput.value) handleSearch();
+            }
+        }
+
+        // --- Toast ---
+        function showToast(msg, isError = false) {
+            toast.textContent = msg;
+            toast.style.background = isError ? 'rgba(255, 59, 48, 0.9)' : 'rgba(0,0,0,0.8)';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+    </script>
+
+</body>
+
+</html>
